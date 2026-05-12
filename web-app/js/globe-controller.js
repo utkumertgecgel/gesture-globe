@@ -25,8 +25,8 @@ class GlobeController {
         this.targetRotationY = 0;
         this.currentRotationX = 0.3;
         this.currentRotationY = 0;
-        this.targetZoom = 2.5;
-        this.currentZoom = 2.5;
+        this.targetZoom = 3.5;
+        this.currentZoom = 3.5;
         this.autoRotate = true;
         this.autoRotateSpeed = 0.001;
         this.isLocked = false;
@@ -323,9 +323,9 @@ class GlobeController {
 
         const starMaterial = new THREE.PointsMaterial({
             color: 0xffffff,
-            size: 0.15,
+            size: 0.5,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.9,
             sizeAttenuation: true,
         });
 
@@ -379,7 +379,7 @@ class GlobeController {
     reset() {
         this.targetRotationX = 0.3;
         this.targetRotationY = 0;
-        this.targetZoom = 2.5;
+        this.targetZoom = 3.5;
         this.autoRotate = true;
         this.isLocked = false;
     }
