@@ -49,14 +49,24 @@ class GestureClassifier {
 
     async loadModel(modelPath) {
         try {
-            // TensorFlow.js modelini yükle
-            if (typeof tf !== 'undefined') {
-                this.model = await tf.loadLayersModel(modelPath);
-                this.useModel = true;
-                console.log('TF.js modeli yüklendi:', modelPath);
+            const response = await fetch(modelPath);
+            if (!response.ok) throw new Error('Model dosyasi bulunamadi');
+            
+            const modelData = await response.json();
+            this.model = modelData;
+            this.modelWeights = modelData.weights;
+            
+            // Label sıralamasını al
+            const labelResponse = await fetch('models/label_map.json');
+            if (labelResponse.ok) {
+                const labelMap = await labelResponse.json();
+                this.gestureNames = Object.values(labelMap);
             }
+            
+            this.useModel = true;
+            console.log('Model yuklendi (Pure JS):', modelPath);
         } catch (e) {
-            console.warn('TF.js modeli yüklenemedi, rule-based mod kullanılacak:', e.message);
+            console.warn('Model yuklenemedi, rule-based mod aktif:', e.message);
             this.useModel = false;
         }
     }
@@ -172,22 +182,40 @@ class GestureClassifier {
     }
 
     /**
-     * TF.js model ile sınıflandırma
+     * JSON model ile sınıflandırma (Saf JavaScript — TF.js gerektirmez)
+     * MLP katmanlarını manuel olarak hesaplar: Linear → BatchNorm → ReLU → ...
      */
     classifyWithModel(landmarks) {
-        // Landmark'ları normalize et
         const normalized = this.normalizeLandmarks(landmarks);
-        
-        // Parmak mesafelerini ekle
         const distances = this.calcFingerDistances(landmarks);
-        const input = [...normalized, ...distances];
+        let x = [...normalized, ...distances];
 
-        // Model inference
-        const tensor = tf.tensor2d([input]);
-        const prediction = this.model.predict(tensor);
-        const probs = prediction.dataSync();
-        tensor.dispose();
-        prediction.dispose();
+        const w = this.modelWeights;
+
+        // Katman 0: Linear(73→128) + BatchNorm + ReLU
+        x = this.linearLayer(x, w['network.0.weight'], w['network.0.bias']);
+        x = this.batchNormLayer(x, w['network.1.weight'], w['network.1.bias'],
+            w['network.1.running_mean'], w['network.1.running_var']);
+        x = x.map(v => Math.max(0, v)); // ReLU
+
+        // Katman 1: Linear(128→64) + BatchNorm + ReLU
+        x = this.linearLayer(x, w['network.4.weight'], w['network.4.bias']);
+        x = this.batchNormLayer(x, w['network.5.weight'], w['network.5.bias'],
+            w['network.5.running_mean'], w['network.5.running_var']);
+        x = x.map(v => Math.max(0, v)); // ReLU
+
+        // Katman 2: Linear(64→32) + ReLU
+        x = this.linearLayer(x, w['network.8.weight'], w['network.8.bias']);
+        x = x.map(v => Math.max(0, v)); // ReLU
+
+        // Katman 3: Linear(32→5) — çıkış
+        x = this.linearLayer(x, w['network.10.weight'], w['network.10.bias']);
+
+        // Softmax
+        const maxVal = Math.max(...x);
+        const exps = x.map(v => Math.exp(v - maxVal));
+        const sumExps = exps.reduce((a, b) => a + b, 0);
+        const probs = exps.map(v => v / sumExps);
 
         // En yüksek olasılıklı gesture
         let maxIdx = 0;
@@ -205,6 +233,29 @@ class GestureClassifier {
             confidence: probs[maxIdx],
             allConfidences: confidences
         };
+    }
+
+    /** Linear layer: y = Wx + b */
+    linearLayer(input, weight, bias) {
+        const outSize = weight.length;
+        const result = new Array(outSize);
+        for (let i = 0; i < outSize; i++) {
+            let sum = bias[i];
+            for (let j = 0; j < input.length; j++) {
+                sum += weight[i][j] * input[j];
+            }
+            result[i] = sum;
+        }
+        return result;
+    }
+
+    /** BatchNorm layer: y = gamma * (x - mean) / sqrt(var + eps) + beta */
+    batchNormLayer(input, gamma, beta, runningMean, runningVar) {
+        const eps = 1e-5;
+        return input.map((v, i) => {
+            const normalized = (v - runningMean[i]) / Math.sqrt(runningVar[i] + eps);
+            return gamma[i] * normalized + beta[i];
+        });
     }
 
     /**
