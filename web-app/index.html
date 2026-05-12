@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GestureGlobe — El Hareketleriyle 3D Dünya</title>
+    <meta name="description" content="Kameradan el hareketleriyle 3D dünya küresini döndür, yakınlaş ve etkileşimde bulun. İleri Derin Öğrenme Final Projesi.">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- MediaPipe Hands -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader-container">
+            <div class="globe-loader">
+                <div class="globe-ring"></div>
+                <div class="globe-ring"></div>
+                <div class="globe-ring"></div>
+            </div>
+            <h1 class="loader-title">GestureGlobe</h1>
+            <p class="loader-subtitle">El hareketleriyle dünyayı keşfet</p>
+            <div class="loader-progress">
+                <div class="loader-progress-bar" id="progress-bar"></div>
+            </div>
+            <p class="loader-status" id="loading-status">Yükleniyor...</p>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="hidden">
+        <!-- 3D Globe Canvas -->
+        <div id="globe-container"></div>
+
+        <!-- Camera Feed (overlay, bottom-left) -->
+        <div id="camera-panel">
+            <div class="panel-header">
+                <span class="panel-dot red"></span>
+                <span class="panel-dot yellow"></span>
+                <span class="panel-dot green"></span>
+                <span class="panel-title">Kamera</span>
+            </div>
+            <div class="camera-wrapper">
+                <video id="camera-feed" autoplay playsinline></video>
+                <canvas id="hand-overlay"></canvas>
+            </div>
+        </div>
+
+        <!-- Gesture Info Panel (top-right) -->
+        <div id="gesture-panel">
+            <div class="panel-header">
+                <span class="panel-dot red"></span>
+                <span class="panel-dot yellow"></span>
+                <span class="panel-dot green"></span>
+                <span class="panel-title">Gesture Tanıma</span>
+            </div>
+            <div class="gesture-content">
+                <div class="current-gesture">
+                    <span class="gesture-icon" id="gesture-icon">✋</span>
+                    <div class="gesture-info">
+                        <span class="gesture-name" id="gesture-name">Bekleniyor...</span>
+                        <span class="gesture-confidence" id="gesture-confidence">—</span>
+                    </div>
+                </div>
+                <div class="confidence-bars" id="confidence-bars">
+                    <!-- Dynamically filled -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Gesture Guide (bottom-right) -->
+        <div id="guide-panel">
+            <div class="panel-header">
+                <span class="panel-dot red"></span>
+                <span class="panel-dot yellow"></span>
+                <span class="panel-dot green"></span>
+                <span class="panel-title">Hareketler</span>
+                <button class="panel-toggle" id="guide-toggle">▼</button>
+            </div>
+            <div class="guide-content" id="guide-content">
+                <div class="guide-item">
+                    <span class="guide-gesture-icon">✋</span>
+                    <div class="guide-text">
+                        <strong>Açık Avuç</strong>
+                        <span>Küreyi döndür</span>
+                    </div>
+                </div>
+                <div class="guide-item">
+                    <span class="guide-gesture-icon">🤏</span>
+                    <div class="guide-text">
+                        <strong>Kıstırma</strong>
+                        <span>Yakınlaş / Uzaklaş</span>
+                    </div>
+                </div>
+                <div class="guide-item">
+                    <span class="guide-gesture-icon">✊</span>
+                    <div class="guide-text">
+                        <strong>Yumruk</strong>
+                        <span>Durdur</span>
+                    </div>
+                </div>
+                <div class="guide-item">
+                    <span class="guide-gesture-icon">☝️</span>
+                    <div class="guide-text">
+                        <strong>İşaret</strong>
+                        <span>Ülke seç</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Country Info Popup -->
+        <div id="country-popup" class="hidden">
+            <div class="country-header">
+                <span class="country-flag" id="country-flag">🌍</span>
+                <h3 id="country-name">—</h3>
+            </div>
+            <div class="country-details">
+                <p><strong>Başkent:</strong> <span id="country-capital">—</span></p>
+                <p><strong>Nüfus:</strong> <span id="country-population">—</span></p>
+            </div>
+        </div>
+
+        <!-- FPS Counter -->
+        <div id="fps-counter">
+            <span id="fps-value">0</span> FPS
+        </div>
+
+        <!-- Title -->
+        <div id="app-title">
+            <h1>Gesture<span class="accent">Globe</span></h1>
+            <p>El hareketleriyle dünyayı keşfet</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/globe-controller.js"></script>
+    <script src="js/hand-tracker.js"></script>
+    <script src="js/gesture-classifier.js"></script>
+    <script src="js/ui-overlay.js"></script>
+</body>
+</html>
