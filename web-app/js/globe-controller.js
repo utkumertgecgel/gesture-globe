@@ -354,16 +354,16 @@ class GlobeController {
     rotate(deltaX, deltaY) {
         if (this.isLocked) return;
         this.autoRotate = false;
-        this.targetRotationY += deltaX * 0.015;
-        this.targetRotationX += deltaY * 0.015;
+        this.targetRotationY += deltaX * 0.08;
+        this.targetRotationX += deltaY * 0.08;
 
-        // X rotasyonunu sınırla (kutuplara kilitlenmesin)
+        // X rotasyonunu sınırla
         this.targetRotationX = Math.max(-1.2, Math.min(1.2, this.targetRotationX));
     }
 
     zoom(delta) {
         if (this.isLocked) return;
-        this.targetZoom += delta * 0.03;
+        this.targetZoom += delta * 0.15;
         this.targetZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.targetZoom));
     }
 

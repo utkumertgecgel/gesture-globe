@@ -32,8 +32,8 @@ class HandTracker {
         this.hands.setOptions({
             maxNumHands: 1,
             modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.5,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.4,
         });
 
         this.hands.onResults((results) => this.processResults(results));
@@ -62,8 +62,8 @@ class HandTracker {
             // Kamera stream'ini al
             const constraints = {
                 video: preferredDeviceId 
-                    ? { deviceId: { exact: preferredDeviceId }, width: 320, height: 240 }
-                    : { facingMode: 'user', width: 320, height: 240 }
+                    ? { deviceId: { exact: preferredDeviceId }, width: 640, height: 480 }
+                    : { facingMode: 'user', width: 640, height: 480 }
             };
 
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -191,7 +191,6 @@ class HandTracker {
             Math.pow(thumb.y - index.y, 2)
         );
         
-        // Mesafe küçükse sarı, büyükse yeşil
         const pinchColor = dist < 0.06 ? '#f59e0b' : 'rgba(99, 102, 241, 0.3)';
         ctx.strokeStyle = pinchColor;
         ctx.lineWidth = dist < 0.06 ? 3 : 1;
@@ -201,6 +200,16 @@ class HandTracker {
         ctx.lineTo(index.x * w, index.y * h);
         ctx.stroke();
         ctx.setLineDash([]);
+
+        // ---- DEBUG OVERLAY: Canvas üzerine parmak durumu yaz ----
+        if (typeof gestureClassifier !== 'undefined' && gestureClassifier.debugInfo) {
+            const d = gestureClassifier.debugInfo;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+            ctx.fillRect(0, h - 28, w, 28);
+            ctx.font = 'bold 13px monospace';
+            ctx.fillStyle = '#00ff00';
+            ctx.fillText(`${d.fingers} pnch:${d.pinchDist} palm:${d.tipPalm}`, 4, h - 9);
+        }
     }
 
     // Landmark'ları normalize et (Python'daki ile aynı)

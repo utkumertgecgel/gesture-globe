@@ -98,8 +98,29 @@ class UIOverlay {
         // Confidence bar'ları güncelle
         this.updateConfidenceBars(result.allConfidences);
 
+        // Debug overlay güncelle
+        this.updateDebugOverlay();
+
         // Globe'u kontrol et
         this.controlGlobe(result);
+    }
+
+    /**
+     * Kamera üzerinde debug bilgisi gösterir
+     */
+    updateDebugOverlay() {
+        let debugEl = document.getElementById('debug-overlay');
+        if (!debugEl) {
+            debugEl = document.createElement('div');
+            debugEl.id = 'debug-overlay';
+            debugEl.style.cssText = 'position:absolute;bottom:2px;left:2px;right:2px;background:rgba(0,0,0,0.75);color:#0f0;font-family:monospace;font-size:11px;padding:4px 6px;border-radius:4px;z-index:100;pointer-events:none;';
+            const wrapper = document.querySelector('.camera-wrapper');
+            if (wrapper) { wrapper.style.position = 'relative'; wrapper.appendChild(debugEl); }
+        }
+        if (this.classifier.debugInfo) {
+            const d = this.classifier.debugInfo;
+            debugEl.innerHTML = `<b>${d.fingers}</b> | pinch:${d.pinchDist}`;
+        }
     }
 
     /**
@@ -110,20 +131,17 @@ class UIOverlay {
 
         switch (result.gesture) {
             case 'open_palm':
-                // Avuç hareketiyle küreyi döndür
-                if (Math.abs(result.palmDeltaX) > 0.15 || Math.abs(result.palmDeltaY) > 0.15) {
-                    // Kamera ayna olduğu için X'i ters çeviriyoruz
-                    this.globe.rotate(-result.palmDeltaX, result.palmDeltaY);
+                // Avuç hareketiyle küreyi döndür — düşük eşik, yüksek hassasiyet
+                if (Math.abs(result.palmDeltaX) > 0.02 || Math.abs(result.palmDeltaY) > 0.02) {
+                    this.globe.rotate(-result.palmDeltaX * 3, result.palmDeltaY * 3);
                 }
                 this.globe.unlock();
                 break;
 
             case 'pinch':
-                // Pinch mesafesi değişimine göre zoom
-                if (Math.abs(result.pinchDelta) > 0.05) {
-                    // Pinch kapanıyor → zoom in (negatif delta = yakınlaş)
-                    // Pinch açılıyor → zoom out (pozitif delta = uzaklaş)
-                    this.globe.zoom(-result.pinchDelta * 2);
+                // Pinch mesafesi değişimine göre zoom — daha hassas
+                if (Math.abs(result.pinchDelta) > 0.01) {
+                    this.globe.zoom(-result.pinchDelta * 8);
                 }
                 break;
 
