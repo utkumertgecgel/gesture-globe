@@ -1,0 +1,17 @@
+{
+  "MLP": {
+    "accuracy": 0.9871794871794872,
+    "params": 20291,
+    "training_time": 8.9
+  },
+  "CNN": {
+    "accuracy": 1.0,
+    "params": 34179,
+    "training_time": 7.1
+  },
+  "LSTM": {
+    "accuracy": 0.9615384615384616,
+    "params": 143107,
+    "training_time": 7.8
+  }
+}

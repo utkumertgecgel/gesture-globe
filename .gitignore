@@ -1,0 +1,38 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Training data (büyük dosyalar)
+training/data/raw/*.csv
+training/data/processed/*.csv
+training/models/*.pth
+training/models/*.onnx
+training/models/*.h5
+training/results/*.png
+
+# Node modules (varsa)
+node_modules/
+
+# TF.js model dosyaları (büyük olabilir)
+web-app/models/*.bin
+
+# Logs
+*.log
