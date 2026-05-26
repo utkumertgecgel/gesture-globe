@@ -1,0 +1,559 @@
+\documentclass[12pt,a4paper]{article}
+
+% ============================================================
+% PAKETLER
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[turkish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% ============================================================
+% SAYFA AYARLARI
+% ============================================================
+\geometry{
+    top=2.5cm, bottom=2.5cm,
+    left=3cm, right=2.5cm
+}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    citecolor=blue!60!black,
+    urlcolor=blue!60!black
+}
+
+% Kod bloğu ayarları
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codeframe}{RGB}{200,200,200}
+\definecolor{codecomment}{RGB}{100,130,100}
+\definecolor{codestring}{RGB}{170,50,50}
+\definecolor{codekeyword}{RGB}{0,80,160}
+
+\lstset{
+    backgroundcolor=\color{codebg},
+    frame=single,
+    rulecolor=\color{codeframe},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{codekeyword}\bfseries,
+    commentstyle=\color{codecomment}\itshape,
+    stringstyle=\color{codestring},
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=4,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    captionpos=b
+}
+
+% Başlık stilleri
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{0.5em}{}
+
+% Üstbilgi/Altbilgi
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small GestureGlobe — El Hareketleriyle 3D Dünya Küresi Kontrolü}
+\lhead{\small Utku Mert Geçgel}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ============================================================
+% BELGE BAŞLANGICI
+% ============================================================
+\begin{document}
+
+% ============================================================
+% KAPAK SAYFASI
+% ============================================================
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+
+    {\Large \textbf{İSTANBUL GEDİK ÜNİVERSİTESİ} \par}
+    \vspace{0.3cm}
+    {\large Bilgisayar Mühendisliği Bölümü \par}
+
+    \vspace{2cm}
+    \rule{\textwidth}{1.5pt}
+    \vspace{0.5cm}
+
+    {\Huge \textbf{GestureGlobe} \par}
+    \vspace{0.4cm}
+    {\LARGE El Hareketleriyle 3D Dünya Küresi Kontrolü \par}
+    \vspace{0.3cm}
+    {\large Gerçek Zamanlı Derin Öğrenme Tabanlı Gesture Tanıma Sistemi \par}
+
+    \vspace{0.5cm}
+    \rule{\textwidth}{1.5pt}
+
+    \vspace{2cm}
+
+    \begin{minipage}{0.45\textwidth}
+        \begin{flushleft}
+            \textbf{Öğrenci:} \\
+            Utku Mert Geçgel
+        \end{flushleft}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.45\textwidth}
+        \begin{flushright}
+            \textbf{Ders:} \\
+            İleri Derin Öğrenme \\[0.5em]
+            \textbf{Öğretim Üyesi:} \\
+            Dr. Mehmet Fatih Yüce
+        \end{flushright}
+    \end{minipage}
+
+    \vfill
+    {\large İstanbul Gedik Üniversitesi \par}
+    {\large \today \par}
+\end{titlepage}
+
+% ============================================================
+% ÖZET
+% ============================================================
+\begin{abstract}
+Bu çalışmada, gerçek zamanlı el hareketi tanınması kullanılarak web tarayıcısında 3 boyutlu bir dünya küresini kontrol eden uçtan uca bir derin öğrenme sistemi geliştirilmiştir. Sistem; veri toplama, model eğitimi ve web entegrasyonu olmak üzere üç ana aşamadan oluşmaktadır. MediaPipe Hands kütüphanesi ile elde edilen 21 el landmarkı, ön işleme adımından geçtikten sonra üç ayrı derin öğrenme mimarisine --- Çok Katmanlı Algılayıcı (MLP), 1 Boyutlu Evrişimsel Sinir Ağı (1D-CNN) ve Uzun Kısa Süreli Bellek (LSTM) --- beslenmiştir. 386 örnekli bir veri kümesi üzerinde gerçekleştirilen deneylerde, \textbf{1D-CNN modeli \%100 test doğruluğuyla} en iyi performansı sergilemiştir. Eğitilen model, ONNX Runtime Web aracılığıyla tarayıcıda çalıştırılmış ve Three.js tabanlı 3 boyutlu sahne ile entegre edilmiştir. Uygulama; açık avuç, kıstırma ve yumruk hareketlerini algılamasının yanı sıra küreyi döndürmek, yakınlaştırmak ve kilitlemek için bu hareketleri gerçek zamanlı olarak kullanabilmektedir.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Giriş}
+% ============================================================
+
+İnsan-bilgisayar etkileşimi (HCI) alanında, klavye ve fare gibi geleneksel giriş aygıtlarının yerini almaya aday olan yöntemlerden biri de el hareketi tanınmasıdır. Bilgisayar görü ve derin öğrenme alanlarındaki hızlı gelişim sayesinde, kameradan gerçek zamanlı el hareketi tanıma sistemleri artık yüksek doğrulukta çalışabilmekte ve pek çok uygulama alanı bulmaktadır.
+
+Bu projede ``GestureGlobe'' adlı, el hareketleriyle kontrol edilebilen interaktif bir 3 boyutlu dünya küresi uygulaması geliştirilmiştir. Projenin temel amacı, derin öğrenme tabanlı bir gesture tanıma modelini uçtan uca tasarlamak; veri toplama, model eğitimi, model ihracatı ve tarayıcı entegrasyonu aşamalarını bir arada ele almaktır.
+
+\subsection{Motivasyon}
+
+Dokunmaksızın bir sistemi kontrol etme fikri; sağlık, eğitim ve sanal gerçeklik gibi pek çok alanda büyük değer taşımaktadır. Web teknolojilerinin olgunlaşması ile birlikte, ONNX Runtime Web ve WebGL gibi araçlar sayesinde karmaşık derin öğrenme modellerinin yalnızca tarayıcı üzerinde çalıştırılması mümkün hale gelmiştir. Bu proje, bahsedilen teknolojileri birleştirerek pratik ve demo düzeyde çalışan bir sistem ortaya koymaktadır.
+
+\subsection{Proje Kapsamındaki Temel Katkılar}
+
+\begin{itemize}
+    \item El landmarklarından elde edilen özelliklerle özel bir veri kümesi oluşturulmuştur.
+    \item Üç farklı derin öğrenme mimarisi eğitilmiş ve karşılaştırılmıştır.
+    \item En iyi model (1D-CNN), ONNX formatıyla tarayıcıya aktarılmıştır.
+    \item Gerçek zamanlı gesture tanıma, 3 boyutlu sahne kontrolüyle entegre edilmiştir.
+\end{itemize}
+
+% ============================================================
+\section{İlgili Çalışmalar}
+% ============================================================
+
+El hareketi tanıma literatüründe MediaPipe \cite{mediapipe}, elin 21 landmarkını milisaniyeler içinde tespit edebilen hafif ve hassas bir çözüm olarak öne çıkmaktadır. Bu çalışmada MediaPipe, ham görüntü işleme yükünü tamamen üstlenmekte; modelin görevi ise yalnızca bu landmark koordinatlarını sınıflandırmaktan ibarettir.
+
+Landmark tabanlı gesture tanıma yaklaşımında, görüntü piksellerinin doğrudan kullanıldığı CNN modellerine kıyasla çok daha az parametre yeterli olmakta ve model kameraya olan uzaklık ile aydınlatma koşullarından bağımsız hale gelmektedir \cite{gesture_survey}. 1D-CNN mimarisinin landmark dizileri üzerinde etkili olduğu çeşitli çalışmalarla gösterilmiştir \cite{cnn_gesture}.
+
+ONNX (Open Neural Network Exchange) standardı, PyTorch'ta eğitilen modellerin tarayıcı ortamında ONNX Runtime Web aracılığıyla verimli şekilde çalıştırılmasını sağlamaktadır \cite{onnx}. Bu yaklaşım, sunucu gerektirmeyen, istemci tarafında koşan bir yapay zeka deneyimine olanak tanımaktadır. Derste kullanılan Derin Öğrenme ile Python kaynakları da \cite{chollet_book, chollet_notebooks} bu çalışmaya rehberlik etmiştir.
+
+% ============================================================
+\section{Sistem Mimarisi}
+% ============================================================
+
+Sistem, birbiriyle zincirlenen dört katmandan oluşmaktadır:
+
+\begin{enumerate}
+    \item \textbf{Görüntü Yakalama:} Web kamerası görüntüsü her karede MediaPipe Hands'e iletilir.
+    \item \textbf{Landmark Tespiti:} MediaPipe, elde 21 adet 3 boyutlu nokta (x, y, z koordinatları) çıkarır.
+    \item \textbf{Ön İşleme ve Sınıflandırma:} Landmarklar normalize edildikten ve mesafeler hesaplandıktan sonra ONNX modelinde sınıflandırma yapılır.
+    \item \textbf{Sahne Kontrolü:} Sınıflandırma sonucu, Three.js 3 boyutlu sahnesine iletilerek küre kontrol edilir.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[
+    box/.style={rectangle, draw, rounded corners, text width=3.2cm, align=center, minimum height=1.2cm, fill=blue!8},
+    arrow/.style={->, thick, blue!50!black}
+]
+\node[box] (cam) at (0,0) {Web Kamerası};
+\node[box] (mp) at (4.2,0) {MediaPipe Hands\\(21 Landmark)};
+\node[box] (pre) at (8.4,0) {Ön İşleme\\(73 özellik)};
+\node[box] (cnn) at (12.6,0) {1D-CNN\\(ONNX)};
+\node[box] (ctrl) at (16.8,0) {Globe\\Kontrolü};
+
+\draw[arrow] (cam) -- (mp);
+\draw[arrow] (mp) -- (pre);
+\draw[arrow] (pre) -- (cnn);
+\draw[arrow] (cnn) -- (ctrl);
+\end{tikzpicture}
+}
+\caption{Sistem veri akış diyagramı}
+\end{figure}
+
+\subsection{Ön İşleme Adımı}
+
+Ham landmark koordinatları modele beslenmeden önce iki adımlı bir ön işlemeden geçirilmektedir:
+
+\textbf{Adım 1 — Normalizasyon:} Bilek noktası (landmark 0) orijin olarak alınıp tüm koordinatlardan çıkarılır. Ardından, oluşturulan vektörün maksimum mutlak değere bölünmesiyle koordinatlar $[-1, 1]$ aralığına ölçeklenir. Bu sayede model, elin kamera karşısındaki konumundan ve ölçeğinden bağımsız hale gelir.
+
+\begin{equation}
+\hat{p}_i = \frac{p_i - p_0}{\max_{j} |p_j - p_0|}
+\end{equation}
+
+burada $p_i$, $i$. landmarkın koordinat vektörü ve $p_0$ bilek koordinatıdır.
+
+\textbf{Adım 2 — Parmak Ucu Mesafeleri:} Beş parmak ucunun (başparmak, işaret, orta, yüzük, serçe: landmark 4, 8, 12, 16, 20) ikili kombinasyonlarından elde edilen 10 Öklid mesafesi özellik vektörüne eklenir. Bu özellikler, parmaklar arası açılma-kapanma ilişkisini sayısal olarak ifade eder.
+
+Sonuç olarak her örnek, $63 + 10 = \mathbf{73}$ boyutlu bir özellik vektörü olarak temsil edilmektedir.
+
+% ============================================================
+\section{Veri Kümesi}
+% ============================================================
+
+\subsection{Veri Toplama}
+
+Veri toplama işlemi, projeyle birlikte geliştirilen özel bir web arayüzü (\texttt{collect.html}) aracılığıyla gerçekleştirilmiştir. Bu arayüz; MediaPipe Hands'i tarayıcıda çalıştırmakta, her karede ön işleme adımını uygulamakta ve sonuçları CSV formatında kaydetmektedir. Böylece eğitim sırasındaki ön işleme adımı ile veri toplama sırasındaki ön işleme adımının birebir aynı olması garanti edilmiştir.
+
+\subsection{Veri Kümesi İstatistikleri}
+
+Toplanan veri kümesi aşağıdaki özelliklere sahiptir:
+
+\begin{table}[H]
+\centering
+\caption{Veri kümesi sınıf dağılımı}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Sınıf} & \textbf{Örnek Sayısı} & \textbf{Açıklama} \\
+\midrule
+open\_palm & 130 & Açık avuç \\
+pinch & 138 & Kıstırma \\
+fist & 118 & Yumruk \\
+\midrule
+\textbf{Toplam} & \textbf{386} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Veri kümesi \%80 eğitim, \%20 test olarak stratified şekilde bölünmüştür.
+
+\begin{table}[H]
+\centering
+\caption{Eğitim/Test bölümü}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Küme} & \textbf{Örnek Sayısı} & \textbf{Oran} \\
+\midrule
+Eğitim & 308 & \%80 \\
+Test & 78 & \%20 \\
+\midrule
+\textbf{Toplam} & \textbf{386} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Model Mimarileri}
+% ============================================================
+
+Kıyaslamalı bir analiz yapabilmek için üç farklı derin öğrenme mimarisi seçilmiş ve aynı eğitim konfigürasyonuyla eğitilmiştir \cite{yuce_notlari}.
+
+\subsection{Çok Katmanlı Algılayıcı (MLP)}
+
+\begin{table}[H]
+\centering
+\caption{MLP katman yapısı}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Katman} & \textbf{Boyut} & \textbf{Aktivasyon} \\
+\midrule
+Giriş & 73 & --- \\
+Tam Bağlı + BN & 128 & ReLU + Dropout(0.3) \\
+Tam Bağlı + BN & 64 & ReLU + Dropout(0.3) \\
+Tam Bağlı & 32 & ReLU \\
+Çıkış & 3 & (CrossEntropy) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Toplam parametre sayısı: \textbf{20.291}
+
+\subsection{1 Boyutlu Evrişimsel Sinir Ağı (1D-CNN)}
+
+1D-CNN, 21 landmarkın her birini $\mathbb{R}^3$ uzayında bir zaman adımı gibi işleme fikrine dayanmaktadır. 73 boyutlu düz vektörü önce $(21, 3)$ şeklinde yeniden biçimlendirir, ardından bunu transpoz ederek $(3, 21)$ şeklinde 3 kanallı 1D sinyal haline getirir.
+
+\begin{table}[H]
+\centering
+\caption{1D-CNN katman yapısı}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Katman} & \textbf{Kanallar} & \textbf{Çekirdek} & \textbf{Aktivasyon} \\
+\midrule
+Giriş & 3 kanal, 21 nokta & --- & --- \\
+Conv1d + BN & 3 $\rightarrow$ 64 & 3 & ReLU \\
+Conv1d + BN & 64 $\rightarrow$ 128 & 3 & ReLU \\
+AdaptiveAvgPool & 128 $\rightarrow$ 128 & Global & --- \\
+Tam Bağlı & 128 $\rightarrow$ 64 & --- & ReLU + Dropout(0.3) \\
+Çıkış & 64 $\rightarrow$ 3 & --- & (CrossEntropy) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Toplam parametre sayısı: \textbf{34.179}
+
+\subsection{Uzun Kısa Süreli Bellek (LSTM)}
+
+\begin{table}[H]
+\centering
+\caption{LSTM katman yapısı}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Katman} & \textbf{Parametre} & \textbf{Detay} \\
+\midrule
+LSTM & Giriş: 3, Gizli: 64 & 2 katman, Bidirectional \\
+Tam Bağlı & 128 $\rightarrow$ 64 & ReLU + Dropout(0.3) \\
+Çıkış & 64 $\rightarrow$ 3 & (CrossEntropy) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Toplam parametre sayısı: \textbf{143.107}
+
+\subsection{Eğitim Konfigürasyonu}
+
+\begin{table}[H]
+\centering
+\caption{Eğitim hiperparametreleri}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parametre} & \textbf{Değer} \\
+\midrule
+Optimizer & Adam ($lr = 0.001$) \\
+Öğrenme Hızı Planlaması & ReduceLROnPlateau (patience=10, factor=0.5) \\
+Batch Boyutu & 32 \\
+Epoch Sayısı & 100 \\
+Kayıp Fonksiyonu & CrossEntropyLoss \\
+Donanım & NVIDIA GPU (CUDA) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Deneysel Sonuçlar}
+% ============================================================
+
+\subsection{Model Karşılaştırması}
+
+\begin{table}[H]
+\centering
+\caption{Model performans karşılaştırması}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Model} & \textbf{Test Doğruluğu} & \textbf{Parametre} & \textbf{Eğitim Süresi} & \textbf{Durum} \\
+\midrule
+MLP & \%98.72 & 20.291 & 8.9 sn & --- \\
+\textbf{1D-CNN} & \textbf{\%100.00} & \textbf{34.179} & \textbf{7.1 sn} & \textbf{En iyi} \\
+LSTM & \%96.15 & 143.107 & 7.8 sn & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sınıf Bazlı Performans (1D-CNN)}
+
+\begin{table}[H]
+\centering
+\caption{1D-CNN sınıf bazlı classification report}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Sınıf} & \textbf{Kesinlik} & \textbf{Duyarlılık} & \textbf{F1-Skoru} & \textbf{Destek} \\
+\midrule
+fist & 1.00 & 1.00 & 1.00 & 24 \\
+open\_palm & 1.00 & 1.00 & 1.00 & 26 \\
+pinch & 1.00 & 1.00 & 1.00 & 28 \\
+\midrule
+\textbf{Makro Ort.} & \textbf{1.00} & \textbf{1.00} & \textbf{1.00} & \textbf{78} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Neden 1D-CNN Başarılı?}
+
+\begin{itemize}
+    \item \textbf{Mekânsal yerellik:} 1D konvolüsyon, komşu landmarklar arasındaki ilişkileri yerel olarak yakalar.
+    \item \textbf{Parametre paylaşımı:} Aynı çekirdek tüm landmark pozisyonlarına uygulanır; bu genelleme kapasitesini artırır.
+    \item \textbf{Kanal ayrımı:} x, y, z koordinatlarının ayrı kanallar olarak işlenmesi, modelin her ekseni bağımsız öğrenmesine olanak tanır.
+    \item \textbf{Uygun veri yapısı:} 21 landmarkın her biri sırasıyla parmak eklemlerine karşılık gelir; bu sıralılık anlamlı bir yapı oluşturur.
+\end{itemize}
+
+% ============================================================
+\section{Web Uygulaması}
+% ============================================================
+
+\subsection{Mimari Bileşenler}
+
+Web uygulaması dört ana JavaScript modülünden oluşmaktadır. Arayüz, Three.js \cite{threejs} ile WebGL tabanlı 3 boyutlu sahne üzerine inşa edilmiştir:
+
+\begin{description}
+    \item[\texttt{hand-tracker.js}] MediaPipe Hands'i başlatan, kamera aygıtını seçen ve her karede landmark sonuçlarını diğer modüllere ileten sınıf.
+    \item[\texttt{gesture-classifier.js}] ONNX modeli yükleyen ve landmark verisini sınıflandıran sınıf. ONNX modeli yüklenemezse kural tabanlı bir yedek sistem devreye girer.
+    \item[\texttt{globe-controller.js}] Three.js ile 3 boyutlu dünya küresini renderlayan sınıf. Dönme, yakınlaştırma ve kilitleme işlemlerini yönetir.
+    \item[\texttt{ui-overlay.js}] Tüm modülleri koordine eden ana sınıf. Gesture sonucuna göre küreyi kontrol eder, arayüz panellerini günceller.
+\end{description}
+
+\subsection{ONNX Runtime Entegrasyonu}
+
+\begin{lstlisting}[language=Python, caption=Model ONNX ihracatı]
+dummy = torch.randn(1, input_size).to(DEVICE)
+onnx_path = os.path.join(MODELS_DIR, "cnn_best.onnx")
+torch.onnx.export(
+    model, dummy, onnx_path,
+    input_names=['input'],
+    output_names=['output'],
+    dynamic_axes={'input': {0: 'batch'}, 'output': {0: 'batch'}}
+)
+\end{lstlisting}
+
+\begin{lstlisting}[language=JavaScript, caption=ONNX Runtime Web ile model inference]
+this.session = await ort.InferenceSession.create('models/cnn_best.onnx');
+
+const inputTensor = new ort.Tensor('float32',
+    Float32Array.from(inputArray), [1, 73]);
+const feeds = {};
+feeds[this.session.inputNames[0]] = inputTensor;
+const output = await this.session.run(feeds);
+\end{lstlisting}
+
+\subsection{Gesture -- Eylem Eşleştirmesi}
+
+\begin{table}[H]
+\centering
+\caption{Gesture ve küre eylem eşleştirmesi}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Gesture} & \textbf{Açıklama} & \textbf{Eylem} \\
+\midrule
+Açık Avuç & Tüm parmaklar açık, el hareket ediyor & Küreyi döndür \\
+Kıstırma & Başparmak + işaret birleşik, el yukarı/aşağı & Yakınlaştır / Uzaklaştır \\
+Yumruk & Tüm parmaklar kapalı & Küreyi kilitle (durdur) \\
+Yok & El algılanmıyor & Oto-dönüşüme devam et \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Tartışma}
+% ============================================================
+
+\subsection{Başarılı Yönler}
+
+Proje genel olarak hedeflerini karşılamıştır. 1D-CNN modeli \%100 test doğruluğuyla son derece başarılı bir sınıflandırma performansı sergilemiştir. Model ONNX formatında tarayıcıya aktarılarak herhangi bir sunucu gerektirmeksizin gerçek zamanlı çalışabilmektedir.
+
+\subsection{Sınırlılıklar}
+
+Projenin bazı sınırlılıkları mevcuttur. Her şeyden önce, veri kümesi nispeten küçüktür: 386 örnek, farklı ellere ve aydınlatma koşullarına genellenebilirlik konusunda sorular doğurabilir.
+
+Özellikle etkileşim tarafında, \textbf{kıstırma (pinch) hareketi ile zoom yapma algoritmasında donanımsal ve mantıksal zorluklar} yaşanmıştır. Başparmak ve işaret parmağı birleştiğinde oluşan mikro hareketlerin MediaPipe tarafından algılanmasındaki tutarsızlıklar nedeniyle zoom fonksiyonu istenen akıcılıkta çalışmamaktadır. Bu durum çeşitli filtrelemeler (history, accumulator) ile hafifletilmeye çalışılsa da tamamen çözülememiş ve projenin bir sınırlılığı olarak kalmıştır.
+
+Ek olarak, sekiz ila on bir kare/saniye civarında seyreden düşük FPS değeri, orta düzey donanıma sahip sistemlerde kullanıcı deneyimini olumsuz etkileyebilir. MediaPipe yalnızca tek el algıladığı için iki elli gesture'lar desteklenmemektedir.
+
+\subsection{Gelecek Çalışmalar}
+
+\begin{itemize}
+    \item Veri artırma teknikleri (rotasyon, gaussian gürültü) ile veri kümesi zenginleştirilebilir.
+    \item Inference işlemi Web Worker'a taşınarak UI bloklanması önlenebilir.
+    \item Transfer öğrenme ile daha büyük el veri kümelerinden yararlanılabilir.
+    \item İki elli gesture desteği eklenerek etkileşim zenginleştirilebilir.
+\end{itemize}
+
+% ============================================================
+\section{Sonuç}
+% ============================================================
+
+Bu çalışmada, el hareketi tanınması ve 3 boyutlu görüntülemeyi bir arada kullanan uçtan uca bir derin öğrenme sistemi başarıyla geliştirilmiştir. MediaPipe Hands tarafından sağlanan landmark verisinin ön işlenmesi ve 1D-CNN mimarisinin uygulanmasıyla \%100 test doğruluğu elde edilmiştir. Eğitilen model, ONNX Runtime Web aracılığıyla doğrudan web tarayıcısında çalıştırılmış; Three.js tabanlı 3 boyutlu dünya küresi ile entegre edilerek interaktif bir uygulama haline getirilmiştir.
+
+% ============================================================
+\section{Ek Çalışmalar}
+% ============================================================
+
+Bu projede zorunlu gereksinimler ötesinde aşağıdaki ek çalışmalar gerçekleştirilmiştir:
+
+\begin{enumerate}
+    \item \textbf{GitHub Repo (Public):} Proje, detaylı Türkçe README, kurulum talimatları ve proje yapısı ile birlikte public GitHub reposunda yayınlanmıştır. \url{https://github.com/utkumertgecgel/gesture-globe}
+    \item \textbf{Birden Fazla Model Karşılaştırması:} MLP, 1D-CNN ve LSTM olmak üzere üç farklı derin öğrenme mimarisi sistematik olarak karşılaştırılmış; sonuçlar tablo, grafik ve confusion matrix'lerle raporlanmıştır.
+    \item \textbf{ONNX Edge Deployment:} Eğitilen CNN modeli PyTorch'tan ONNX formatına aktarılmış ve ONNX Runtime Web kullanılarak doğrudan tarayıcıda çalıştırılmıştır.
+    \item \textbf{Özel Veri Seti:} Tüm eğitim verisi, proje kapsamında geliştirilen \texttt{collect.html} arayüzü aracılığıyla elle toplanmıştır. Harici veri seti kullanılmamıştır.
+    \item \textbf{Canlı Web Demo:} Three.js, MediaPipe Hands ve ONNX Runtime Web entegrasyonuyla çalışan, gerçek zamanlı gesture tanıma ve 3D küre kontrolü sunan bir web uygulaması geliştirilmiştir.
+    \item \textbf{LaTeX Rapor:} Bu rapor, Overleaf kullanılarak LaTeX ile hazırlanmıştır.
+\end{enumerate}
+
+% ============================================================
+\section*{Kullanılan Araçlar}
+% ============================================================
+
+Bu proje kapsamında aşağıdaki yapay zekâ araçlarından yardımcı araç olarak yararlanılmıştır. Model tasarımı, veri toplama, eğitim deneyleri ve sonuç analizi tamamen özgün çalışma ürünüdür; tüm model mimarisi kararları, hiperparametre seçimleri ve deney sonuçları öğrenciye aittir.
+
+\begin{itemize}
+    \item \textbf{Google Gemini / Antigravity:} Kod geliştirme, hata ayıklama ve rapor taslağı oluşturma süreçlerinde yardımcı araç olarak kullanılmıştır.
+    \item \textbf{Anthropic Claude (Opus ve Sonnet):} Kod incelemesi, hata ayıklama ve belge düzenleme süreçlerinde yardımcı araç olarak kullanılmıştır.
+\end{itemize}
+
+% ============================================================
+\begin{thebibliography}{9}
+
+\bibitem{mediapipe}
+Zhang, F., et al. (2020).
+\textit{MediaPipe Hands: On-device Real-time Hand Tracking}.
+arXiv:2006.10214.
+
+\bibitem{gesture_survey}
+Oudah, M., Al-Naji, A., \& Chahl, J. (2020).
+\textit{Hand Gesture Recognition Based on Computer Vision: A Review of Techniques}.
+Journal of Imaging, 6(8), 73.
+
+\bibitem{cnn_gesture}
+Kopuklu, O., et al. (2019).
+\textit{Real-time Hand Gesture Detection and Classification Using Convolutional Neural Networks}.
+IEEE FG 2019.
+
+\bibitem{onnx}
+ONNX Community (2023).
+\textit{ONNX: Open Neural Network Exchange}.
+\url{https://onnx.ai}
+
+\bibitem{threejs}
+Cabello, R. (2023).
+\textit{Three.js — JavaScript 3D Library}.
+\url{https://threejs.org}
+
+\bibitem{yuce_notlari}
+Yüce, M. F. (2026).
+\textit{İleri Derin Öğrenme Ders Notları}.
+İstanbul Gedik Üniversitesi, Bilgisayar Mühendisliği Bölümü, BLMS431.
+
+\bibitem{chollet_notebooks}
+Chollet, F. (2023).
+\textit{Deep Learning with Python Notebooks}.
+GitHub: \url{https://github.com/fchollet/deep-learning-with-python-notebooks}
+
+\bibitem{chollet_book}
+Chollet, F. (2023).
+\textit{Deep Learning with Python}.
+\url{https://deeplearningwithpython.io/}
+
+\end{thebibliography}
+
+\end{document}
