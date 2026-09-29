@@ -1,5 +1,7 @@
 # GestureGlobe — El Hareketleriyle 3D Dünya Küresi Kontrolü
 
+Tekrar geliştirilecek.!
+
 **İleri Derin Öğrenme Final Projesi** | İstanbul Gedik Üniversitesi — Bilgisayar Mühendisliği
 
 Kameradan gerçek zamanlı el hareketlerini tespit edip, eğitilmiş bir CNN modeli ile sınıflandırarak tarayıcıda 3D dünya küresini kontrol etmeyi sağlayan uçtan uca bir derin öğrenme projesidir.
