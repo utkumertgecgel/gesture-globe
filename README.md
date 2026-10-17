@@ -1,6 +1,6 @@
 # GestureGlobe — El Hareketleriyle 3D Dünya Küresi Kontrolü
 
-Tekrar geliştirilecek.!
+Tekrar geliştirilecek.!!!!
 
 **İleri Derin Öğrenme Final Projesi** | İstanbul Gedik Üniversitesi — Bilgisayar Mühendisliği
 
